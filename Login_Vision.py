@@ -1,52 +1,73 @@
-#--------------------------------------Importamos librerias--------------------------------------------
-
 from tkinter import *
+from tkinter import ttk
 import os
 import cv2
 from matplotlib import pyplot
 from mtcnn.mtcnn import MTCNN
 import numpy as np
-
-#------------------------ Crearemos una funcion que se encargara de registrar el usuario ---------------------
+from PIL import Image, ImageTk
+import ttkthemes
 
 def registrar_usuario():
-    usuario_info = usuario.get() #Obetnemos la informacion alamcenada en usuario
-    contra_info = contra.get() #Obtenemos la informacion almacenada en contra
+    usuario_info = usuario.get()
+    contra_info = contra.get()
 
-    archivo = open(usuario_info, "w") #Abriremos la informacion en modo escritura
-    archivo.write(usuario_info + "\n")   #escribimos la info
+    archivo = open(usuario_info, "w")
+    archivo.write(usuario_info + "\n")
     archivo.write(contra_info)
     archivo.close()
 
-    #Limpiaremos los text variable
     usuario_entrada.delete(0, END)
     contra_entrada.delete(0, END)
-
-    #Ahora le diremos al usuario que su registro ha sido exitoso
-    Label(pantalla1, text = "Registro Convencional Exitoso", fg = "green", font = ("Calibri",11)).pack()
     
-
-#--------------------------- Funcion para almacenar el registro facial --------------------------------------
+    # Notificaciones
+    notification = Toplevel(pantalla1)
+    notification.geometry("300x100")
+    notification.title("")
+    notification.config(bg='#2ecc71')
     
+    Label(notification, 
+          text="✓ Registro Exitoso", 
+          fg="white", 
+          bg='#2ecc71',
+          font=("Helvetica", 12, "bold")).pack(pady=20)
+    
+    notification.after(2000, notification.destroy)
+
 def registro_facial():
-    #Vamos a capturar el rostro
-    cap = cv2.VideoCapture(0)               #Elegimos la camara con la que vamos a hacer la deteccion
+    cap = cv2.VideoCapture(0)
     while(True):
-        ret,frame = cap.read()              #Leemos el video
-        cv2.imshow('Registro Facial',frame)         #Mostramos el video en pantalla
-        if cv2.waitKey(1) == 27:            #Cuando oprimamos "Escape" rompe el video
+        ret,frame = cap.read()
+        frame = cv2.flip(frame, 1)  # Ahora es espejo
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.putText(frame, 'Presione "Esc" para capturar', (20,50), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
+        cv2.imshow('Registro Facial',frame)
+        if cv2.waitKey(1) == 27:
             break
+    
     usuario_img = usuario.get()
-    cv2.imwrite(usuario_img+".jpg",frame)       #Guardamos la ultima caputra del video como imagen y asignamos el nombre del usuario
-    cap.release()                               #Cerramos
+    cv2.imwrite(usuario_img+".jpg",frame)
+    cap.release()
     cv2.destroyAllWindows()
 
-    usuario_entrada.delete(0, END)   #Limpiamos los text variables
+    usuario_entrada.delete(0, END)
     contra_entrada.delete(0, END)
-    Label(pantalla1, text = "Registro Facial Exitoso", fg = "green", font = ("Calibri",11)).pack()
-
-    #----------------- Detectamos el rostro y exportamos los pixeles --------------------------
     
+    # Notificación
+    notification = Toplevel(pantalla1)
+    notification.geometry("300x100")
+    notification.title("")
+    notification.config(bg='#2ecc71')
+    
+    Label(notification, 
+          text="✓ Registro Facial Exitoso", 
+          fg="white", 
+          bg='#2ecc71',
+          font=("Helvetica", 12, "bold")).pack(pady=20)
+    
+    notification.after(2000, notification.destroy)
+
     def reg_rostro(img, lista_resultados):
         data = pyplot.imread(img)
         for i in range(len(lista_resultados)):
@@ -55,7 +76,7 @@ def registro_facial():
             pyplot.subplot(1, len(lista_resultados), i+1)
             pyplot.axis('off')
             cara_reg = data[y1:y2, x1:x2]
-            cara_reg = cv2.resize(cara_reg,(150,200), interpolation = cv2.INTER_CUBIC) #Guardamos la imagen con un tamaño de 150x200
+            cara_reg = cv2.resize(cara_reg,(150,200), interpolation = cv2.INTER_CUBIC)
             cv2.imwrite(usuario_img+".jpg",cara_reg)
             pyplot.imshow(data[y1:y2, x1:x2])
         pyplot.show()
@@ -64,43 +85,86 @@ def registro_facial():
     pixeles = pyplot.imread(img)
     detector = MTCNN()
     caras = detector.detect_faces(pixeles)
-    reg_rostro(img, caras)   
-    
-#------------------------Crearemos una funcion para asignar al boton registro --------------------------------
+    reg_rostro(img, caras)
+
 def registro():
     global usuario
-    global contra  #Globalizamos las variables para usarlas en otras funciones
+    global contra
     global usuario_entrada
     global contra_entrada
     global pantalla1
-    pantalla1 = Toplevel(pantalla) #Esta pantalla es de un nivel superior a la principal
-    pantalla1.title("Registro")
-    pantalla1.geometry("300x250")  #Asignamos el tamaño de la ventana
     
-    #--------- Empezaremos a crear las entradas ----------------------------------------
+    pantalla1 = Toplevel(pantalla)
+    pantalla1.title("Registro de Usuario")
+    pantalla1.geometry("400x500")
+    pantalla1.configure(bg='#f5f6fa')
+    
+    # Frame principal
+    frame_main = ttk.Frame(pantalla1, style='Card.TFrame')
+    frame_main.pack(pady=20, padx=40, fill="both", expand=True)
+    
+    # Estilo para el frame
+    style = ttk.Style(frame_main)
+    style.configure('Card.TFrame', background='white')
+    
+    # Header
+    Label(frame_main, 
+          text="Crear Cuenta", 
+          font=("Helvetica", 20, "bold"),
+          bg='white',
+          fg='#2c3e50').pack(pady=20)
     
     usuario = StringVar()
     contra = StringVar()
     
-    Label(pantalla1, text = "Registro facial: debe de asignar un usuario:").pack()
-    #Label(pantalla1, text = "").pack()  #Dejamos un poco de espacio
-    Label(pantalla1, text = "Registro tradicional: debe asignar usuario y contraseña:").pack()
-    Label(pantalla1, text = "").pack()  #Dejamos un poco de espacio
-    Label(pantalla1, text = "Usuario * ").pack()  #Mostramos en la pantalla 1 el usuario
-    usuario_entrada = Entry(pantalla1, textvariable = usuario) #Creamos un text variable para que el usuario ingrese la info
-    usuario_entrada.pack()
-    Label(pantalla1, text = "Contraseña * ").pack()  #Mostramos en la pantalla 1 la contraseña
-    contra_entrada = Entry(pantalla1, textvariable = contra) #Creamos un text variable para que el usuario ingrese la contra
-    contra_entrada.pack()
-    Label(pantalla1, text = "").pack()  #Dejamos un espacio para la creacion del boton
-    Button(pantalla1, text = "Registro Tradicional", width = 15, height = 1, command = registrar_usuario).pack()  #Creamos el boton
-
-    #------------ Vamos a crear el boton para hacer el registro facial --------------------
-    Label(pantalla1, text = "").pack()
-    Button(pantalla1, text = "Registro Facial", width = 15, height = 1, command = registro_facial).pack()
-
-#------------------------------------------- Funcion para verificar los datos ingresados al login ------------------------------------
+    # Frame para el formulario
+    frame_form = ttk.Frame(frame_main, style='Card.TFrame')
+    frame_form.pack(pady=20, padx=20)
     
+    # Campos de entrada con iconos
+    Label(frame_form, 
+          text="Usuario", 
+          font=("Helvetica", 11),
+          bg='white',
+          fg='#7f8c8d').pack(anchor=W)
+    usuario_entrada = ttk.Entry(frame_form, 
+                              textvariable=usuario,
+                              font=("Helvetica", 12),
+                              width=30)
+    usuario_entrada.pack(pady=(5,15))
+    
+    Label(frame_form, 
+          text="Contraseña", 
+          font=("Helvetica", 11),
+          bg='white',
+          fg='#7f8c8d').pack(anchor=W)
+    contra_entrada = ttk.Entry(frame_form, 
+                             textvariable=contra,
+                             font=("Helvetica", 12),
+                             width=30,
+                             show="•")
+    contra_entrada.pack(pady=5)
+    
+    # Frame para botones
+    frame_buttons = ttk.Frame(frame_main, style='Card.TFrame')
+    frame_buttons.pack(pady=30)
+    
+    # Estilo para botones
+    style.configure('Accent.TButton',
+                   font=("Helvetica", 11),
+                   padding=10)
+    
+    # Botones
+    ttk.Button(frame_buttons, 
+               text="Registro Tradicional",
+               style='Accent.TButton',
+               command=registrar_usuario).pack(pady=10)
+    
+    ttk.Button(frame_buttons, 
+               text="Registro Facial",
+               style='Accent.TButton',
+               command=registro_facial).pack(pady=10)
+
 def verificacion_login():
     log_usuario = verificacion_usuario.get()
     log_contra = verificacion_contra.get()
@@ -108,38 +172,62 @@ def verificacion_login():
     usuario_entrada2.delete(0, END)
     contra_entrada2.delete(0, END)
 
-    lista_archivos = os.listdir()   #Vamos a importar la lista de archivos con la libreria os
-    if log_usuario in lista_archivos:   #Comparamos los archivos con el que nos interesa
-        archivo2 = open(log_usuario, "r")  #Abrimos el archivo en modo lectura
-        verificacion = archivo2.read().splitlines()  #leera las lineas dentro del archivo ignorando el resto
+    lista_archivos = os.listdir()
+    if log_usuario in lista_archivos:
+        archivo2 = open(log_usuario, "r")
+        verificacion = archivo2.read().splitlines()
         if log_contra in verificacion:
-            print("Inicio de sesion exitoso")
-            Label(pantalla2, text = "Inicio de Sesion Exitoso", fg = "green", font = ("Calibri",11)).pack()
+            notification = Toplevel(pantalla2)
+            notification.geometry("300x100")
+            notification.title("")
+            notification.config(bg='#2ecc71')
+            Label(notification, 
+                  text="✓ Inicio de Sesión Exitoso", 
+                  fg="white",
+                  bg='#2ecc71',
+                  font=("Helvetica", 12, "bold")).pack(pady=20)
+            notification.after(2000, notification.destroy)
         else:
-            print("Contraseña incorrecta, ingrese de nuevo")
-            Label(pantalla2, text = "Contraseña Incorrecta", fg = "red", font = ("Calibri",11)).pack()
+            notification = Toplevel(pantalla2)
+            notification.geometry("300x100")
+            notification.title("")
+            notification.config(bg='#e74c3c')
+            Label(notification, 
+                  text="✕ Contraseña Incorrecta", 
+                  fg="white",
+                  bg='#e74c3c',
+                  font=("Helvetica", 12, "bold")).pack(pady=20)
+            notification.after(2000, notification.destroy)
     else:
-        print("Usuario no encontrado")
-        Label(pantalla2, text = "Usuario no encontrado", fg = "red", font = ("Calibri",11)).pack()
-    
-#--------------------------Funcion para el Login Facial --------------------------------------------------------
+        notification = Toplevel(pantalla2)
+        notification.geometry("300x100")
+        notification.title("")
+        notification.config(bg='#e74c3c')
+        Label(notification, 
+              text="✕ Usuario no encontrado", 
+              fg="white",
+              bg='#e74c3c',
+              font=("Helvetica", 12, "bold")).pack(pady=20)
+        notification.after(2000, notification.destroy)
+
 def login_facial():
-#------------------------------Vamos a capturar el rostro-----------------------------------------------------
-    cap = cv2.VideoCapture(0)               #Elegimos la camara con la que vamos a hacer la deteccion
+    cap = cv2.VideoCapture(0)
     while(True):
-        ret,frame = cap.read()              #Leemos el video
-        cv2.imshow('Login Facial',frame)         #Mostramos el video en pantalla
-        if cv2.waitKey(1) == 27:            #Cuando oprimamos "Escape" rompe el video
+        ret,frame = cap.read()
+        frame = cv2.flip(frame, 1)
+        frame = cv2.putText(frame, 'Presione "Esc" para capturar', (20,50), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
+        cv2.imshow('Login Facial',frame)
+        if cv2.waitKey(1) == 27:
             break
-    usuario_login = verificacion_usuario.get()    #Con esta variable vamos a guardar la foto pero con otro nombre para no sobreescribir
-    cv2.imwrite(usuario_login+"LOG.jpg",frame)       #Guardamos la ultima caputra del video como imagen y asignamos el nombre del usuario
-    cap.release()                               #Cerramos
+            
+    usuario_login = verificacion_usuario.get()
+    cv2.imwrite(usuario_login+"LOG.jpg",frame)
+    cap.release()
     cv2.destroyAllWindows()
 
-    usuario_entrada2.delete(0, END)   #Limpiamos los text variables
+    usuario_entrada2.delete(0, END)
     contra_entrada2.delete(0, END)
-
-    #----------------- Funcion para guardar el rostro --------------------------
     
     def log_rostro(img, lista_resultados):
         data = pyplot.imread(img)
@@ -149,57 +237,67 @@ def login_facial():
             pyplot.subplot(1, len(lista_resultados), i+1)
             pyplot.axis('off')
             cara_reg = data[y1:y2, x1:x2]
-            cara_reg = cv2.resize(cara_reg,(150,200), interpolation = cv2.INTER_CUBIC) #Guardamos la imagen 150x200
+            cara_reg = cv2.resize(cara_reg,(150,200), interpolation = cv2.INTER_CUBIC)
             cv2.imwrite(usuario_login+"LOG.jpg",cara_reg)
             return pyplot.imshow(data[y1:y2, x1:x2])
         pyplot.show()
 
-    #-------------------------- Detectamos el rostro-------------------------------------------------------
-    
     img = usuario_login+"LOG.jpg"
     pixeles = pyplot.imread(img)
     detector = MTCNN()
     caras = detector.detect_faces(pixeles)
     log_rostro(img, caras)
 
-    #-------------------------- Funcion para comparar los rostros --------------------------------------------
     def orb_sim(img1,img2):
-        orb = cv2.ORB_create()  #Creamos el objeto de comparacion
- 
-        kpa, descr_a = orb.detectAndCompute(img1, None)  #Creamos descriptor 1 y extraemos puntos claves
-        kpb, descr_b = orb.detectAndCompute(img2, None)  #Creamos descriptor 2 y extraemos puntos claves
-
-        comp = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck = True) #Creamos comparador de fuerza
-
-        matches = comp.match(descr_a, descr_b)  #Aplicamos el comparador a los descriptores
-
-        regiones_similares = [i for i in matches if i.distance < 70] #Extraemos las regiones similares en base a los puntos claves
+        orb = cv2.ORB_create()
+        kpa, descr_a = orb.detectAndCompute(img1, None)
+        kpb, descr_b = orb.detectAndCompute(img2, None)
+        comp = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck = True)
+        matches = comp.match(descr_a, descr_b)
+        regiones_similares = [i for i in matches if i.distance < 70]
         if len(matches) == 0:
             return 0
-        return len(regiones_similares)/len(matches)  #Exportamos el porcentaje de similitud
-        
-    #---------------------------- Importamos las imagenes y llamamos la funcion de comparacion ---------------------------------
-    
-    im_archivos = os.listdir()   #Vamos a importar la lista de archivos con la libreria os
-    if usuario_login+".jpg" in im_archivos:   #Comparamos los archivos con el que nos interesa
-        rostro_reg = cv2.imread(usuario_login+".jpg",0)     #Importamos el rostro del registro
-        rostro_log = cv2.imread(usuario_login+"LOG.jpg",0)  #Importamos el rostro del inicio de sesion
+        return len(regiones_similares)/len(matches)
+
+    im_archivos = os.listdir()
+    if usuario_login+".jpg" in im_archivos:
+        rostro_reg = cv2.imread(usuario_login+".jpg",0)
+        rostro_log = cv2.imread(usuario_login+"LOG.jpg",0)
         similitud = orb_sim(rostro_reg, rostro_log)
         if similitud >= 0.98:
-            Label(pantalla2, text = "Inicio de Sesion Exitoso", fg = "green", font = ("Calibri",11)).pack()
-            print("Bienvenido al sistema usuario: ",usuario_login)
-            print("Compatibilidad con la foto del registro: ",similitud)
+            notification = Toplevel(pantalla2)
+            notification.geometry("300x100")
+            notification.title("")
+            notification.config(bg='#2ecc71')
+            Label(notification, 
+                  text=f"✓ Bienvenido {usuario_login}\nCompatibilidad: {similitud:.2%}", 
+                  fg="white",
+                  bg='#2ecc71',
+                  font=("Helvetica", 12, "bold")).pack(pady=20)
+            notification.after(3000, notification.destroy)
         else:
-            print("Rostro incorrecto, Cerifique su usuario")
-            print("Compatibilidad con la foto del registro: ",similitud)
-            Label(pantalla2, text = "Incompatibilidad de rostros", fg = "red", font = ("Calibri",11)).pack()
+            notification = Toplevel(pantalla2)
+            notification.geometry("300x100")
+            notification.title("")
+            notification.config(bg='#e74c3c')
+            Label(notification, 
+                  text=f"✕ Rostro no compatible\nCompatibilidad: {similitud:.2%}", 
+                  fg="white",
+                  bg='#e74c3c',
+                  font=("Helvetica", 12, "bold")).pack(pady=20)
+            notification.after(3000, notification.destroy)
     else:
-        print("Usuario no encontrado")
-        Label(pantalla2, text = "Usuario no encontrado", fg = "red", font = ("Calibri",11)).pack()
-            
+        notification = Toplevel(pantalla2)
+        notification.geometry("300x100")
+        notification.title("")
+        notification.config(bg='#e74c3c')
+        Label(notification, 
+              text="✕ Usuario no encontrado", 
+              fg="white",
+              bg='#e74c3c',
+              font=("Helvetica", 12, "bold")).pack(pady=20)
+        notification.after(2000, notification.destroy)
 
-#------------------------Funcion que asignaremos al boton login -------------------------------------------------
-        
 def login():
     global pantalla2
     global verificacion_usuario
@@ -208,45 +306,144 @@ def login():
     global contra_entrada2
     
     pantalla2 = Toplevel(pantalla)
-    pantalla2.title("Login")
-    pantalla2.geometry("300x250")   #Creamos la ventana
-    Label(pantalla2, text = "Login facial: debe de asignar un usuario:").pack()
-    Label(pantalla2, text = "Login tradicional: debe asignar usuario y contraseña:").pack()
-    Label(pantalla2, text = "").pack()  #Dejamos un poco de espacio
+    pantalla2.title("Iniciar Sesión")
+    pantalla2.geometry("400x500")
+    pantalla2.configure(bg='#f5f6fa')
+    
+    # Frame principal
+    frame_main = ttk.Frame(pantalla2, style='Card.TFrame')
+    frame_main.pack(pady=20, padx=40, fill="both", expand=True)
+    
+    # Header
+    Label(frame_main, 
+          text="Iniciar Sesión", 
+          font=("Helvetica", 20, "bold"),
+          bg='white',
+          fg='#2c3e50').pack(pady=20)
     
     verificacion_usuario = StringVar()
     verificacion_contra = StringVar()
     
-    #---------------------------------- Ingresamos los datos --------------------------
-    Label(pantalla2, text = "Usuario * ").pack()
-    usuario_entrada2 = Entry(pantalla2, textvariable = verificacion_usuario)
-    usuario_entrada2.pack()
-    Label(pantalla2, text = "Contraseña * ").pack()
-    contra_entrada2 = Entry(pantalla2, textvariable = verificacion_contra)
-    contra_entrada2.pack()
-    Label(pantalla2, text = "").pack()
-    Button(pantalla2, text = "Inicio de Sesion Tradicional", width = 20, height = 1, command = verificacion_login).pack()
-
-    #------------ Vamos a crear el boton para hacer el login facial --------------------
-    Label(pantalla2, text = "").pack()
-    Button(pantalla2, text = "Inicio de Sesion Facial", width = 20, height = 1, command = login_facial).pack()
-        
-#------------------------- Funcion de nuestra pantalla principal ------------------------------------------------
+    # Frame para el formulario
+    frame_form = ttk.Frame(frame_main, style='Card.TFrame')
+    frame_form.pack(pady=20, padx=20)
     
+    Label(frame_form, 
+          text="Usuario", 
+          font=("Helvetica", 11),
+          bg='white',
+          fg='#7f8c8d').pack(anchor=W)
+    usuario_entrada2 = ttk.Entry(frame_form, 
+                                textvariable=verificacion_usuario,
+                                font=("Helvetica", 12),
+                                width=30)
+    usuario_entrada2.pack(pady=(5,15))
+    
+    Label(frame_form, 
+          text="Contraseña", 
+          font=("Helvetica", 11),
+          bg='white',
+          fg='#7f8c8d').pack(anchor=W)
+    contra_entrada2 = ttk.Entry(frame_form, 
+                               textvariable=verificacion_contra,
+                               font=("Helvetica", 12),
+                               width=30,
+                               show="•")
+    contra_entrada2.pack(pady=5)
+    
+    # Frame para botones
+    frame_buttons = ttk.Frame(frame_main, style='Card.TFrame')
+    frame_buttons.pack(pady=30)
+    
+    ttk.Button(frame_buttons, 
+                text="Inicio de Sesión Tradicional",
+                style='Accent.TButton',
+                command=verificacion_login).pack(pady=10)
+
+    ttk.Button(frame_buttons,
+               text="Inicio de Sesión Facial",
+               style='Accent.TButton',
+               command=login_facial).pack(pady=10)
+
 def pantalla_principal():
-    global pantalla          #Globalizamos la variable para usarla en otras funciones
+    global pantalla
     pantalla = Tk()
-    pantalla.geometry("300x250")  #Asignamos el tamaño de la ventana 
-    pantalla.title("Aprende e Ingenia")       #Asignamos el titulo de la pantalla
-    Label(text = "Login Inteligente", bg = "gray", width = "300", height = "2", font = ("Verdana", 13)).pack() #Asignamos caracteristicas de la ventana
+    pantalla.geometry("800x600")
+    pantalla.title("Sistema de Login Inteligente")
+    pantalla.configure(bg='#f5f6fa')
     
-#------------------------- Vamos a Crear los Botones ------------------------------------------------------
+    style = ttkthemes.ThemedStyle(pantalla)
+    style.set_theme("arc") 
     
-    Label(text = "").pack()  #Creamos el espacio entre el titulo y el primer boton
-    Button(text = "Iniciar Sesion", height = "2", width = "30", command = login).pack()
-    Label(text = "").pack() #Creamos el espacio entre el primer boton y el segundo boton
-    Button(text = "Registro", height = "2", width = "30", command = registro).pack()
+    style.configure('Card.TFrame', background='white')
+    style.configure('Accent.TButton',
+                   font=("Helvetica", 11),
+                   padding=10)
+    
+    main_frame = ttk.Frame(pantalla, style='Card.TFrame')
+    main_frame.pack(expand=True, pady=50, padx=50)
+    
+    # Logo 
+    title_frame = ttk.Frame(main_frame, style='Card.TFrame')
+    title_frame.pack(pady=30)
+    
+    Label(title_frame, 
+          text="SISTEMA DE LOGIN INTELIGENTE", 
+          font=("Helvetica", 24, "bold"),
+          bg='white',
+          fg='#2c3e50').pack()
+    
+    Label(title_frame,
+          text="Reconocimiento Facial + Autenticación Tradicional",
+          font=("Helvetica", 12),
+          bg='white',
+          fg='#7f8c8d').pack(pady=10)
+    
+    # Frame para los botones
+    button_frame = ttk.Frame(main_frame, style='Card.TFrame')
+    button_frame.pack(pady=30)
+    
+    # Estilo para botones grandes
+    style.configure('Large.Accent.TButton',
+                   font=("Helvetica", 12, "bold"),
+                   padding=15)
+    
+    # Botones principales
+    ttk.Button(button_frame,
+               text="INICIAR SESIÓN",
+               style='Large.Accent.TButton',
+               command=login).pack(pady=10, padx=20, ipadx=30)
+    
+    ttk.Button(button_frame,
+               text="REGISTRARSE",
+               style='Large.Accent.TButton',
+               command=registro).pack(pady=10, padx=20, ipadx=30)
+    
+    # Footer
+    footer_frame = ttk.Frame(main_frame, style='Card.TFrame')
+    footer_frame.pack(pady=30)
+    
+    Label(footer_frame,
+          text="© 2024 Sistema de Login Inteligente",
+          font=("Helvetica", 9),
+          bg='white',
+          fg='#95a5a6').pack()
+    
+    Label(footer_frame,
+          text="Desarrollado con Tecnología de Reconocimiento Facial",
+          font=("Helvetica", 9),
+          bg='white',
+          fg='#95a5a6').pack()
 
+    # Centrar la ventana en la pantalla
+    pantalla.update_idletasks()
+    width = pantalla.winfo_width()
+    height = pantalla.winfo_height()
+    x = (pantalla.winfo_screenwidth() // 2) - (width // 2)
+    y = (pantalla.winfo_screenheight() // 2) - (height // 2)
+    pantalla.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    
     pantalla.mainloop()
 
-pantalla_principal()
+if __name__ == "__main__":
+    pantalla_principal()

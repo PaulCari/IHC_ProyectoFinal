@@ -212,14 +212,30 @@ def verificacion_login():
 
 def login_facial():
     cap = cv2.VideoCapture(0)
-    while(True):
-        ret,frame = cap.read()
+    counter = 0  # Contador parpadeo del texto
+
+    while True:
+        ret, frame = cap.read()
         frame = cv2.flip(frame, 1)
-        frame = cv2.putText(frame, 'Presione "Esc" para capturar', (20,50), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
-        cv2.imshow('Login Facial',frame)
-        if cv2.waitKey(1) == 27:
+
+        # Fondo detrás del texto
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (10, 20), (500, 70), (0, 0, 0), -1) 
+        frame = cv2.addWeighted(overlay, 0.5, frame, 0.5, 0)      
+
+        #Parpadeo del texto 
+        text_color = (255, 255, 255) if (counter // 20) % 2 == 0 else (180, 180, 180)
+        cv2.putText(frame, 'Presione "Esc" para capturar', (20, 50), 
+                    cv2.FONT_HERSHEY_COMPLEX, 0.8, text_color, 2)
+
+        cv2.imshow('Login Facial', frame)
+
+        counter += 1  
+        if cv2.waitKey(1) == 27:  
             break
+
+    cap.release()
+    cv2.destroyAllWindows()
             
     usuario_login = verificacion_usuario.get()
     cv2.imwrite(usuario_login+"LOG.jpg",frame)
